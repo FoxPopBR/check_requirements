@@ -1,3 +1,35 @@
+"""
+check.py: Python Project Dependency Analysis Tool.
+
+This script automates the process of identifying libraries imported into a Python project,
+comparing these libraries with those installed in the current environment (via pip and conda) and generating
+a requirements.txt file with the correct versions of the libraries used in the project, to guarantee the replicability of the environment.
+
+Use:
+- Place this script in the root folder of your Python project.
+- Run the script in the terminal with Python 3. Example: python check.py
+- The script will go through all .py files in the project to identify imports.
+- It creates a file 'bibliotecas_utilizados.txt' with all identified libraries.
+- Runs 'pip list' and 'conda list' to capture all libraries installed in the environment.
+- Compares project libraries with pip and conda lists, generating 'requirements.txt'.
+- Note: This process was tested with libraries installed via pip and conda only!
+
+The generated 'requirements.txt' file contains the libraries used in the project with their respective
+installed versions, ready to be used in another environment to replicate the setup.
+
+Developer: Mr Fox
+GitHub: https://github.com/FoxPopBR/check_requirements
+This script is part of the SomFox project, intended to facilitate dependency management in Python projects.
+Developed for academic programming learning purposes, developed by a beginner programmer!
+
+Comments:
+- The script assumes access to both pip and conda package managers at runtime.
+- Accuracy in generating requirements.txt depends on the accuracy of imports in the project files
+and the availability of libraries in pip and conda registries.
+
+Version: 1.0.0
+Last updated: [02/21/2024]
+"""
 import os
 import ast
 import subprocess
@@ -85,3 +117,36 @@ print("Arquivos pip list e conda list foram salvos em list.txt")
 # Comparar as bibliotecas e gerar requirements.txt
 compare_and_generate_requirements(imported_libraries, 'list.txt', 'requirements.txt')
 print(f"Arquivo requirements.txt gerado com sucesso!")
+
+"""
+check.py: Ferramenta de Análise de Dependências de Projetos Python.
+
+Este script automatiza o processo de identificação de bibliotecas importadas em um projeto Python,
+comparando essas bibliotecas com as instaladas no ambiente atual (via pip e conda) e gerando
+um arquivo requirements.txt com as versões corretas das bibliotecas utilizadas no projeto, para garantir a replicabilidade do ambiente.
+
+Utilização:
+- Coloque este script na pasta raiz do seu projeto Python.
+- Execute o script no terminal com Python 3. Exemplo: python check.py
+- O script irá percorrer todos os arquivos .py do projeto para identificar importações.
+- Ele cria um arquivo 'bibliotecas_utilizadas.txt' com todas as bibliotecas identificadas.
+- Executa 'pip list' e 'conda list' para capturar todas as bibliotecas instaladas no ambiente.
+- Compara as bibliotecas do projeto com as listas do pip e conda, gerando 'requirements.txt'.
+- Observação: Esse processo foi testado com bibliotecas instaladas via pip e conda somente!
+
+O arquivo 'requirements.txt' gerado contém as bibliotecas utilizadas no projeto com suas respectivas
+versões instaladas, pronto para ser usado em outro ambiente para replicar o setup.
+
+Desenvolvedor: Senhor Fox
+GitHub: https://github.com/FoxPopBR/check_requirements
+Este script faz parte do projeto SomFox, destinado a facilitar a gestão de dependências em projetos Python.
+Desenvolvido com finalidades acadêmicas de aprendizado de programação, desenvolvido por um programador inciante!
+
+Observações:
+- O script assume acesso a ambos os gerenciadores de pacotes pip e conda no ambiente de execução.
+- A precisão na geração do requirements.txt depende da exatidão das importações nos arquivos do projeto
+e da disponibilidade das bibliotecas nos registros do pip e conda.
+
+Versão: 1.0.0
+Última atualização: [21/02/2024]
+"""
