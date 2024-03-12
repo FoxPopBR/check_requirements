@@ -53,9 +53,13 @@ def find_imported_libraries(file_path):
 
 def find_all_imported_libraries_in_directory(directory):
     all_libraries = set()
+    excluded_files = ['db_original_add.py']  # Adicione os nomes dos arquivos a serem excluídos
+    excluded_directories = ['tools']  # Adicione os nomes dos diretórios a serem excluídos
     for root, _, files in os.walk(directory):
+        if any(excluded_dir in root for excluded_dir in excluded_directories):
+            continue  # Pula este diretório
         for file in files:
-            if file.endswith('.py'):
+            if file.endswith('.py') and file not in excluded_files:
                 file_path = os.path.join(root, file)
                 imported_libraries = find_imported_libraries(file_path)
                 all_libraries.update(imported_libraries)
@@ -71,12 +75,15 @@ def read_libraries_from_file(input_file):
         return [line.strip() for line in file.readlines()]
 
 def get_pip_and_conda_list():
-    subprocess.run(['pip', 'list', '>', 'pip_list.txt'], shell=True)
-    subprocess.run(['conda', 'list', '>', 'conda_list.txt'], shell=True)
+    with open('pip_list.txt', 'w') as pip_file:
+        subprocess.run(['pip', 'list'], stdout=pip_file)
+    with open('conda_list.txt', 'w') as conda_file:
+        subprocess.run(['conda', 'list'], stdout=conda_file)
     with open('pip_list.txt', 'r') as pip_file, open('conda_list.txt', 'r') as conda_file, open('list.txt', 'w') as output_file:
         output_file.write(pip_file.read())
         output_file.write('\n')
         output_file.write(conda_file.read())
+
 
 def compare_and_generate_requirements(libraries, list_file, output_file):
     with open(list_file, 'r') as file:
