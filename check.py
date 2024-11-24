@@ -3,43 +3,48 @@ check.py: Python Project Dependency Analysis Tool.
 
 This script automates the process of identifying libraries imported into a Python project,
 comparing these libraries with those installed in the current environment (via pip and conda) and generating
-a requirements.txt file with the correct versions of the libraries used in the project, to guarantee the replicability of the environment.
+a requirements.txt file with the correct versions of the libraries used in the project, to ensure the replicability of the environment.
 
-Use:
+Usage:
 - Place this script in the root folder of your Python project.
+- At the end of the code, add files or folders that should be ignored, including this file. excluded_files = ['check.py']
 - Run the script in the terminal with Python 3. Example: python check.py
-- The script will go through all .py files in the project to identify imports.
-- It creates a file 'bibliotecas_utilizados.txt' with all identified libraries.
-- Runs 'pip list' and 'conda list' to capture all libraries installed in the environment.
-- Compares project libraries with pip and conda lists, generating 'requirements.txt'.
+- The script will go through all the .py files in the project to identify imports.
+- It creates a file 'libraries_used.txt' with all the identified libraries.
+- Run 'pip list' and 'conda list' to capture all the libraries installed in the environment. - Compares the project libraries with the pip and conda lists, generating 'requirements.txt'.
 - Note: This process was tested with libraries installed via pip and conda only!
 
 The generated 'requirements.txt' file contains the libraries used in the project with their respective
 installed versions, ready to be used in another environment to replicate the setup.
 
-Developer: Mr Fox
+Developer: Mr. Fox
 GitHub: https://github.com/FoxPopBR/check_requirements
-This script is part of the SomFox project, intended to facilitate dependency management in Python projects.
-Developed for academic programming learning purposes, developed by a beginner programmer!
+This script is part of the SomFox project, designed to facilitate dependency management in Python projects.
+Developed for academic purposes of learning programming, developed by a beginner programmer!
 
-Comments:
-- The script assumes access to both pip and conda package managers at runtime.
-- Accuracy in generating requirements.txt depends on the accuracy of imports in the project files
-and the availability of libraries in pip and conda registries.
+Notes:
+- The script assumes access to both pip and conda package managers in the execution environment.
+- The accuracy in generating requirements.txt depends on the accuracy of the imports in the project files
+and the availability of the libraries in the pip and conda registries.
 
 Version: 1.0.0
-Last updated: [02/21/2024]
+- Update: [21/02/2024]
+Version: 1.0.1
+Last Updated [24/11/2024]
 """
 import os
 import ast
 import subprocess
 import re
 
+
 def normalize_library_name(name):
-    # Remove ou substitui caracteres especiais para comparação
+    """Remove ou substitui caracteres especiais para comparação"""
     return re.sub(r'[-._]', '', name.lower())
 
+
 def find_imported_libraries(file_path):
+    """Encontra bibliotecas importadas em um arquivo Python"""
     libraries = set()
     with open(file_path, 'r', encoding='utf-8') as file:
         tree = ast.parse(file.read(), filename=file_path)
@@ -51,41 +56,84 @@ def find_imported_libraries(file_path):
                 libraries.add(node.module)
     return libraries
 
-def find_all_imported_libraries_in_directory(directory):
+
+def find_all_imported_libraries_in_directory(directory, excluded_files=None, excluded_extensions=None, excluded_directories=None):
+    """
+    Encontra todas as bibliotecas importadas nos arquivos de um diretório.
+
+    :param directory: Diretório raiz para buscar bibliotecas.
+    :param excluded_files: Lista de nomes de arquivos a serem ignorados.
+    :param excluded_extensions: Lista de extensões de arquivos a serem ignorados.
+    :param excluded_directories: Lista de diretórios a serem ignorados.
+    :return: Conjunto de bibliotecas importadas.
+    """
     all_libraries = set()
-    excluded_files = ['db_original_add.py']  # Adicione os nomes dos arquivos a serem excluídos
-    excluded_directories = ['tools']  # Adicione os nomes dos diretórios a serem excluídos
+    excluded_files = excluded_files or []
+    excluded_extensions = excluded_extensions or []
+    excluded_directories = excluded_directories or []
+
     for root, _, files in os.walk(directory):
+        # Ignorar diretórios na lista excluída
         if any(excluded_dir in root for excluded_dir in excluded_directories):
-            continue  # Pula este diretório
+            continue
         for file in files:
-            if file.endswith('.py') and file not in excluded_files:
+            # Ignorar arquivos pelo nome ou extensão
+            if file in excluded_files or any(file.endswith(ext) for ext in excluded_extensions):
+                continue
+            # Processar apenas arquivos .py
+            if file.endswith('.py'):
                 file_path = os.path.join(root, file)
                 imported_libraries = find_imported_libraries(file_path)
-                all_libraries.update(imported_libraries)
+                all_libraries.update(map(normalize_library_name, imported_libraries))  # Normaliza nomes
     return all_libraries
 
+
 def save_libraries_to_file(libraries, output_file):
+    """Salva as bibliotecas em um arquivo de texto"""
     with open(output_file, 'w') as file:
         for library in sorted(libraries):
             file.write(library + '\n')
 
+
 def read_libraries_from_file(input_file):
+    """Lê bibliotecas de um arquivo de texto"""
     with open(input_file, 'r') as file:
         return [line.strip() for line in file.readlines()]
 
-def get_pip_and_conda_list():
-    with open('pip_list.txt', 'w') as pip_file:
-        subprocess.run(['pip', 'list'], stdout=pip_file)
-    with open('conda_list.txt', 'w') as conda_file:
-        subprocess.run(['conda', 'list'], stdout=conda_file)
-    with open('pip_list.txt', 'r') as pip_file, open('conda_list.txt', 'r') as conda_file, open('list.txt', 'w') as output_file:
-        output_file.write(pip_file.read())
-        output_file.write('\n')
-        output_file.write(conda_file.read())
+
+def get_pip_and_conda_list(temp_dir):
+    """
+    Gera listas de pacotes instalados (pip e conda) e combina em um único arquivo.
+    :param temp_dir: Diretório temporário para salvar os arquivos.
+    """
+    pip_file = os.path.join(temp_dir, 'pip_list.txt')
+    conda_file = os.path.join(temp_dir, 'conda_list.txt')
+    list_file = os.path.join(temp_dir, 'list.txt')
+
+    os.makedirs(temp_dir, exist_ok=True)
+
+    with open(pip_file, 'w') as pip_output:
+        subprocess.run(['pip', 'list'], stdout=pip_output)
+
+    with open(conda_file, 'w') as conda_output:
+        subprocess.run(['conda', 'list'], stdout=conda_output)
+
+    with open(pip_file, 'r') as pip_input, open(conda_file, 'r') as conda_input, open(list_file, 'w') as combined_output:
+        combined_output.write(pip_input.read())
+        combined_output.write('\n')
+        combined_output.write(conda_input.read())
+
+    return list_file
 
 
 def compare_and_generate_requirements(libraries, list_file, output_file):
+    """
+    Compara as bibliotecas encontradas no projeto com as instaladas no ambiente e gera requirements.txt.
+
+    :param libraries: Conjunto de bibliotecas encontradas no projeto.
+    :param list_file: Arquivo contendo a lista de pacotes instalados.
+    :param output_file: Arquivo de saída para requirements.txt.
+    """
     with open(list_file, 'r') as file:
         installed_packages = file.read()
 
@@ -106,24 +154,37 @@ def compare_and_generate_requirements(libraries, list_file, output_file):
     for lib in not_found_libraries:
         print(f"Biblioteca {lib} não encontrada no pip ou no conda.")
 
-# Diretório do seu projeto
-project_directory = os.getcwd()  # Obtém o diretório atual do script
 
-# Encontrar todas as bibliotecas importadas nos arquivos do projeto
-imported_libraries = find_all_imported_libraries_in_directory(project_directory)
+# Diretório do projeto
+project_directory = os.getcwd()
 
-# Salvar as bibliotecas em um arquivo de texto
+# Configuração de exclusões
+excluded_files = ['check.py']  # Nomes de arquivos específicos
+excluded_extensions = ['.exe', '.txt']  # Extensões de arquivo
+excluded_directories = ['NameFolder']  # Diretórios
+
+# Encontrar todas as bibliotecas importadas
+imported_libraries = find_all_imported_libraries_in_directory(
+    project_directory,
+    excluded_files=excluded_files,
+    excluded_extensions=excluded_extensions,
+    excluded_directories=excluded_directories
+)
+
+# Salvar bibliotecas em um arquivo
 bibliotecas_file = 'bibliotecas_utilizadas.txt'
 save_libraries_to_file(imported_libraries, bibliotecas_file)
 print("Bibliotecas utilizadas foram salvas em", bibliotecas_file)
 
-# Gerar pip list e conda list e salvar em list.txt
-get_pip_and_conda_list()
-print("Arquivos pip list e conda list foram salvos em list.txt")
+# Gerar pip list e conda list
+temp_dir = os.path.join(project_directory, 'temp')
+list_file = get_pip_and_conda_list(temp_dir)
+print("Arquivos pip list e conda list foram salvos em", list_file)
 
-# Comparar as bibliotecas e gerar requirements.txt
-compare_and_generate_requirements(imported_libraries, 'list.txt', 'requirements.txt')
+# Comparar e gerar requirements.txt
+compare_and_generate_requirements(imported_libraries, list_file, 'requirements.txt')
 print(f"Arquivo requirements.txt gerado com sucesso!")
+
 
 """
 check.py: Ferramenta de Análise de Dependências de Projetos Python.
@@ -134,6 +195,7 @@ um arquivo requirements.txt com as versões corretas das bibliotecas utilizadas 
 
 Utilização:
 - Coloque este script na pasta raiz do seu projeto Python.
+- No final do código adicione arquivos ou pastas que devem ser ignorados, incluindo esse arquivo. excluded_files = ['check.py']
 - Execute o script no terminal com Python 3. Exemplo: python check.py
 - O script irá percorrer todos os arquivos .py do projeto para identificar importações.
 - Ele cria um arquivo 'bibliotecas_utilizadas.txt' com todas as bibliotecas identificadas.
@@ -155,5 +217,7 @@ Observações:
 e da disponibilidade das bibliotecas nos registros do pip e conda.
 
 Versão: 1.0.0
-Última atualização: [21/02/2024]
+- atualização: [21/02/2024]
+Versão: 1.0.1
+Ultima atualização [24/11/2024]
 """
